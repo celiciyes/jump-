@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>City Runner</title>
+
+<style>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    overflow: hidden;
+    background: #111;
+    font-family: Arial, sans-serif;
+    user-select: none;
+}
+
+#game {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background: linear-gradient(#55c9ff 0%, #d9f7ff 45%, #777 45%, #222 100%);
+}
+
+/* Sky */
+#sky {
+    position: absolute;
+    inset: 0 0 45% 0;
+    background:
+        radial-gradient(circle at 20% 25%, white 0 35px, transparent 36px),
+        radial-gradient(circle at 70% 18%, white 0 25px, transparent 26px),
+        linear-gradient(#42bdf5, #d8f5ff);
+}
+
+/* Buildings */
+#buildings {
+    position: absolute;
+    bottom: 42%;
+    width: 100%;
+    height: 30%;
+    display: flex;
+    align-items: end;
+    justify-content: space-around;
+}
+
+.building {
+    width: 9%;
+    background: #455a64;
+    border: 2px solid #263238;
+    position: relative;
+}
+
+.building::after {
+    content: "";
+    position: absolute;
+    inset: 10px;
+    background:
+        repeating-linear-gradient(
+            to right,
+            #ffe082 0 10px,
+            transparent 10px 22px
+        );
+    opacity: .8;
+}
+
+/* Road */
+#road {
+    position: absolute;
+    left: 50%;
+    bottom: -10%;
+    transform: translateX(-50%);
+    width: 80%;
+    height: 65%;
+    background: #292929;
+    clip-path: polygon(38% 0, 62% 0, 100% 100%, 0 100%);
+    border-left: 8px solid #aaa;
+    border-right: 8px solid #aaa;
+}
+
+.laneLine {
+    position: absolute;
+    bottom: 0;
+    width: 7px;
+    height: 100%;
+    background: repeating-linear-gradient(
+        to bottom,
+        #fff 0 70px,
+        transparent 70px 130px
+    );
+    transform-origin: bottom;
+}
+
+#line1 {
+    left: 36%;
+    transform: rotate(7deg);
+}
+
+#line2 {
+    right: 36%;
+    transform: rotate(-7deg);
+}
+
+/* Player */
+#player {
+    position: absolute;
+    width: 55px;
+    height: 80px;
+    bottom: 13%;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    transition: left .15s ease;
+}
+
+.head {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #f2b48a;
+    margin: auto;
+    border: 3px solid #333;
+}
+
+.body {
+    width: 38px;
+    height: 42px;
+    margin: 2px auto;
+    border-radius: 12px 12px 5px 5px;
+    background: #e53935;
+    border: 3px solid #222;
+}
+
+.leg {
+    position: absolute;
+    width: 12px;
+    height: 28px;
+    bottom: 0;
+    background: #1565c0;
+    border-radius: 5px;
+}
+
+.leg.left {
+    left: 11px;
+}
+
+.leg.right {
+    right: 11px;
+}
+
+/* Objects */
+.object {
+    position: absolute;
+    z-index: 10;
+    transition: none;
+}
+
+.coin {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: radial-gradient(circle, #fff176 0 20%, #ffc107 21% 60%, #ff8f00 61%);
+    border: 3px solid #ffb300;
+    box-shadow: 0 0 15px #ffd740;
+}
+
+.obstacle {
+    width: 55px;
+    height: 55px;
+    background: repeating-linear-gradient(
+        45deg,
+        #e53935 0 12px,
+        #fff 12px 24px
+    );
+    border: 4px solid #333;
+    border-radius: 5px;
+}
+
+/* UI */
+#score {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    z-index: 100;
+    color: white;
+    font-size: 26px;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px #000;
+}
+
+#coinScore {
+    position: absolute;
+    top: 55px;
+    left: 20px;
+    z-index: 100;
+    color: #ffe082;
+    font-size: 20px;
+    font-weight: bold;
+    text-shadow: 2px 2px 3px #000;
+}
+
+#gameOver {
+    display: none;
+    position: absolute;
+    inset: 0;
+    z-index: 200;
+    background: rgba(0,0,0,.75);
+    color: white;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    text-align: center;
+}
+
+#gameOver h1 {
+    font-size: 55px;
+    margin-bottom: 15px;
+}
+
+#gameOver p {
+    font-size: 22px;
+    margin-bottom: 25px;
+}
+
+button {
+    border: none;
+    padding: 15px 35px;
+    border-radius: 10px;
+    background: #ffca28;
+    color: #222;
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #ffd95a;
+}
+
+/* Mobile controls */
+#controls {
+    position: absolute;
+    bottom: 20px;
+    left: 0;
+    width: 100%;
+    z-index: 150;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.control {
+    width: 65px;
+    height: 55px;
+    border-radius: 12px;
+    background: rgba(255,255,255,.25);
+    color: white;
+    border: 2px solid rgba(255,255,255,.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 25px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="game">
+
+    <div id="sky"></div>
+
+    <div id="buildings">
+        <div class="building" style="height:70%"></div>
+        <div class="building" style="height:90%"></div>
+        <div class="building" style="height:55%"></div>
+        <div class="building" style="height:80%"></div>
+        <div class="building" style="height:65%"></div>
+        <div class="building" style="height:95%"></div>
+    </div>
+
+    <div id="road">
+        <div class="laneLine" id="line1"></div>
+        <div class="laneLine" id="line2"></div>
+    </div>
+
+    <div id="score">Score: 0</div>
+    <div id="coinScore">Coins: 0</div>
+
+    <div id="player">
+        <div class="head"></div>
+        <div class="body"></div>
+        <div class="leg left"></div>
+        <div class="leg right"></div>
+    </div>
+
+    <div id="controls">
+        <div class="control" id="leftBtn">◀</div>
+        <div class="control" id="jumpBtn">▲</div>
+        <div class="control" id="rightBtn">▶</div>
+    </div>
+
+    <div id="gameOver">
+        <h1>GAME OVER</h1>
+        <p id="finalScore"></p>
+        <button onclick="restartGame()">PLAY AGAIN</button>
+    </div>
+
+</div>
+
+<script>
+const game = document.getElementById("game");
+const player = document.getElementById("player");
+
+const scoreText = document.getElementById("score");
+const coinText = document.getElementById("coinScore");
+
+const gameOverScreen = document.getElementById("gameOver");
+const finalScore = document.getElementById("finalScore");
+
+let lane = 1;
+let score = 0;
+let coins = 0;
+let speed = 7;
+
+let jumping = false;
+let gameRunning = true;
+
+const lanes = [
+    "32%",
+    "50%",
+    "68%"
+];
+
+function updatePlayer() {
+    player.style.left = lanes[lane];
+}
+
+function moveLeft() {
+    if (!gameRunning) return;
+
+    if (lane > 0) {
+        lane--;
+        updatePlayer();
+    }
+}
+
+function moveRight() {
+    if (!gameRunning) return;
+
+    if (lane < 2) {
+        lane++;
+        updatePlayer();
+    }
+}
+
+function jump() {
+    if (!gameRunning || jumping) return;
+
+    jumping = true;
+
+    player.style.transition = "bottom .25s ease";
+    player.style.bottom = "28%";
+
+    setTimeout(() => {
+        player.style.bottom = "13%";
+    }, 250);
+
+    setTimeout(() => {
+        jumping = false;
+    }, 500);
+}
+
+/* Keyboard */
+document.addEventListener("keydown", e => {
+
+    if (e.key === "ArrowLeft" || e.key.toLowerCase() === "a") {
+        moveLeft();
+    }
+
+    if (e.key === "ArrowRight" || e.key.toLowerCase() === "d") {
+        moveRight();
+    }
+
+    if (
+        e.key === "ArrowUp" ||
+        e.key === " " ||
+        e.key.toLowerCase() === "w"
+    ) {
+        jump();
+    }
+});
+
+/* Touch controls */
+document.getElementById("leftBtn").addEventListener("click", moveLeft);
+document.getElementById("rightBtn").addEventListener("click", moveRight);
+document.getElementById("jumpBtn").addEventListener("click", jump);
+
+
+/* Create coin */
+function createCoin() {
+
+    if (!gameRunning) return;
+
+    const coin = document.createElement("div");
+    coin.className = "object coin";
+
+    const randomLane = Math.floor(Math.random() * 3);
+
+    coin.dataset.lane = randomLane;
+
+    coin.style.left = lanes[randomLane];
+    coin.style.top = "-50px";
+    coin.style.transform = "translateX(-50%)";
+
+    game.appendChild(coin);
+
+    let y = -50;
+
+    const timer = setInterval(() => {
+
+        if (!gameRunning) {
+            clearInterval(timer);
+            coin.remove();
+            return;
+        }
+
+        y += speed;
+        coin.style.top = y + "px";
+
+        checkCoinCollision(coin, timer);
+
+        if (y > window.innerHeight + 50) {
+            clearInterval(timer);
+            coin.remove();
+        }
+
+    }, 16);
+}
+
+
+/* Create obstacle */
+function createObstacle() {
+
+    if (!gameRunning) return;
+
+    const obstacle = document.createElement("div");
+    obstacle.className = "object obstacle";
+
+    const randomLane = Math.floor(Math.random() * 3);
+
+    obstacle.dataset.lane = randomLane;
+
+    obstacle.style.left = lanes[randomLane];
+    obstacle.style.top = "-70px";
+    obstacle.style.transform = "translateX(-50%)";
+
+    game.appendChild(obstacle);
+
+    let y = -70;
+
+    const timer = setInterval(() => {
+
+        if (!gameRunning) {
+            clearInterval(timer);
+            obstacle.remove();
+            return;
+        }
+
+        y += speed;
+        obstacle.style.top = y + "px";
+
+        checkObstacleCollision(obstacle, timer);
+
+        if (y > window.innerHeight + 80) {
+            clearInterval(timer);
+            obstacle.remove();
+        }
+
+    }, 16);
+}
+
+
+/* Coin collision */
+function checkCoinCollision(coin, timer) {
+
+    const p = player.getBoundingClientRect();
+    const c = coin.getBoundingClientRect();
+
+    if (
+        p.left < c.right &&
+        p.right > c.left &&
+        p.top < c.bottom &&
+        p.bottom > c.top
+    ) {
+
+        coins++;
+
+        coinText.textContent = "Coins: " + coins;
+
+        clearInterval(timer);
+        coin.remove();
+    }
+}
+
+
+/* Obstacle collision */
+function checkObstacleCollision(obstacle, timer) {
+
+    if (jumping) return;
+
+    const p = player.getBoundingClientRect();
+    const o = obstacle.getBoundingClientRect();
+
+    if (
+        p.left < o.right &&
+        p.right > o.left &&
+        p.top < o.bottom &&
+        p.bottom > o.top
+    ) {
+
+        clearInterval(timer);
+
+        gameOver();
+    }
+}
+
+
+/* Score */
+setInterval(() => {
+
+    if (!gameRunning) return;
+
+    score++;
+
+    scoreText.textContent = "Score: " + score;
+
+    if (score % 500 === 0) {
+        speed += 1;
+    }
+
+}, 100);
+
+
+/* Spawn objects */
+function spawnObjects() {
+
+    if (!gameRunning) return;
+
+    createObstacle();
+
+    if (Math.random() > .35) {
+        setTimeout(createCoin, 300);
+    }
+
+    const next = Math.max(600, 1300 - score / 3);
+
+    setTimeout(spawnObjects, next);
+}
+
+function gameOver() {
+
+    gameRunning = false;
+
+    finalScore.textContent =
+        "Score: " + score + "   |   Coins: " + coins;
+
+    gameOverScreen.style.display = "flex";
+}
+
+function restartGame() {
+
+    document.querySelectorAll(".object").forEach(o => o.remove());
+
+    lane = 1;
+    score = 0;
+    coins = 0;
+    speed = 7;
+    jumping = false;
+    gameRunning = true;
+
+    scoreText.textContent = "Score: 0";
+    coinText.textContent = "Coins: 0";
+
+    gameOverScreen.style.display = "none";
+
+    updatePlayer();
+
+    spawnObjects();
+}
+
+
+/* Start */
+updatePlayer();
+spawnObjects();
+</script>
+
+</body>
+</html>
